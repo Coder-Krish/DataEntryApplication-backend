@@ -26,7 +26,10 @@ namespace DataEntryApplication.Controllers
         {
             var districtCollection = (from d in dataEntryDbContext.districts
                                       where d.isActive == true
-                                      select d);
+                                      //d.labor.isActive == true
+                                      select d)
+                                           .Include(l => l.labor);
+
             return Ok(districtCollection);
         }
 
@@ -36,7 +39,9 @@ namespace DataEntryApplication.Controllers
         {
             var districtCollection = (from d in dataEntryDbContext.districts
                                       where d.isActive == true && d.id == id
-                                      select d).FirstOrDefault();
+                                      select d)
+                                      .Include(l => l.labor)
+                                      .FirstOrDefault();
             if (districtCollection != null)
             {
                 return Ok(districtCollection);
@@ -48,23 +53,39 @@ namespace DataEntryApplication.Controllers
             }
         }
 
+        [Route("~/api/getDistrictsById/{id:int}")]
+        [HttpGet]
+        public IActionResult GetDistrictsByCountryId(int id)
+        {
+            var districtCollection = (from d in dataEntryDbContext.districts
+                                      where d.countryId == id && d.isActive == true
+                                      select d).Include(l => l.labor);
+
+            if (districtCollection != null)
+            {
+                return Ok(districtCollection);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Sorry no data found");
+            }
+
+           
+        }
+
         // POST api/<DistrictController>
         [HttpPost]
         public IActionResult Post([FromBody] District district)
         {
-            District newDistrict = new District();
-            newDistrict.code = district.code;
-            newDistrict.laborRatePerHour = district.laborRatePerHour;
-            newDistrict.isActive = district.isActive;
-            newDistrict.countryId = district.countryId;
-
-
-            dataEntryDbContext.Add(newDistrict);
+         
+            dataEntryDbContext.Add(district);
             dataEntryDbContext.SaveChanges();
 
             var districtCollection = (from d in dataEntryDbContext.districts
                                       where d.isActive == true
-                                      select d);
+                                      select d)
+                                      .Include(l => l.labor);
             return Ok(districtCollection);
         }
 

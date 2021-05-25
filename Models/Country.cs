@@ -20,6 +20,8 @@ namespace DataEntryApplication.Models
         public Country()
         {
             district = new List<District>();
+            isActive = true;
+
         }
     }
 }

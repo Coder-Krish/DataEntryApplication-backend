@@ -1,5 +1,6 @@
 ﻿using DataEntryApplication.DataAccess;
 using DataEntryApplication.Models;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -13,6 +14,7 @@ namespace DataEntryApplication.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableCors("DataEntryApplicationPolicy")]
     public class LaborController : ControllerBase
     {
         private DataEntryDbContext dataEntryDbContext = new DataEntryDbContext();
@@ -69,8 +71,7 @@ namespace DataEntryApplication.Controllers
         public IActionResult Put(int id, [FromBody] Labor labor)
         {
             if (labor.laborName != null ||
-                labor.country != null ||
-                labor.district != null ||
+                labor.districtId!=0 ||
                 labor.taskDetail != null ||
                 labor.workHours != 0)
             {
@@ -81,8 +82,7 @@ namespace DataEntryApplication.Controllers
                 if (laborCollection != null)
                 {
                     laborCollection.laborName = labor.laborName;
-                    laborCollection.country = labor.country;
-                    laborCollection.district = labor.district;
+                    laborCollection.districtId = labor.districtId;
                     laborCollection.taskDetail = labor.taskDetail;
                     laborCollection.workHours = labor.workHours;
 

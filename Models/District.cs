@@ -20,5 +20,13 @@ namespace DataEntryApplication.Models
 
         [Key, ForeignKey("Country")]
         public int countryId { get; set; }
+
+        public List<Labor> labor { get; set; }
+
+        public District()
+        {
+            isActive = true;
+            labor = new List<Labor>();
+        }
     }
 }
