@@ -140,5 +140,17 @@ namespace DataEntryApplication.Controllers
                  "Sorry Cannot Delete");
             }
         }
+
+        [Route("~/api/countCountries")]
+        [HttpGet]
+        public IActionResult CountCountries()
+        {
+            var countryCollection = (from c in dataEntryDbContext.countries
+                                where c.isActive == true
+                                select c);
+
+            var countOfCountry = countryCollection.Count();
+            return Ok(countOfCountry);
+        }
     }
 }

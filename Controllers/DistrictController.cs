@@ -165,5 +165,16 @@ namespace DataEntryApplication.Controllers
             }
 
         }
+        [Route("~/api/countDistricts")]
+        [HttpGet]
+        public IActionResult CountDistricts()
+        {
+            var districtCollection = (from c in dataEntryDbContext.districts
+                                     where c.isActive == true
+                                     select c);
+
+            var countOfDistrict = districtCollection.Count();
+            return Ok(countOfDistrict);
+        }
     }
 }

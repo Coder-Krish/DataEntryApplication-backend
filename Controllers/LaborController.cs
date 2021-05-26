@@ -142,5 +142,17 @@ namespace DataEntryApplication.Controllers
                         "Sorry Cannot Delete");
             }
         }
+
+        [Route("~/api/countLabors")]
+        [HttpGet]
+        public IActionResult CountLabors()
+        {
+            var laborCollection = (from c in dataEntryDbContext.labors
+                                      where c.isActive == true
+                                      select c);
+
+            var countOfLabor = laborCollection.Count();
+            return Ok(countOfLabor);
+        }
     }
 }
