@@ -11,9 +11,17 @@ namespace DataEntryApplication.Models
     {
         public int id { get; set; }
 
+        [Required(ErrorMessage ="District Name is required")]
         public string name { get; set; }
+
+        [Required(ErrorMessage = "District Code is required")]
+        [RegularExpression("^[A-Z]{1,1}[0-9]{4,4}$",
+                            ErrorMessage ="District Code Should be in Correct Pattern")]
         public string code { get; set; }
 
+        [Required(ErrorMessage = "Labor Rate is required")]
+        [RegularExpression("^[0-9]{1,10}$",
+                      ErrorMessage = "Labor Rate Should be in Correct Pattern")]
         public int laborRatePerHour { get; set; }
 
         public Boolean isActive { get; set; }

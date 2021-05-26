@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -78,30 +79,42 @@ namespace DataEntryApplication.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] District district)
         {
-         
-            dataEntryDbContext.Add(district);
-            dataEntryDbContext.SaveChanges();
+            var context = new ValidationContext(district, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(district, context, result, true);
+            if(result.Count() == 0)
+            {
+                dataEntryDbContext.Add(district);
+                dataEntryDbContext.SaveChanges();
 
-            var districtCollection = (from d in dataEntryDbContext.districts
-                                      where d.isActive == true
-                                      select d)
-                                      .Include(l => l.labor);
-            return Ok(districtCollection);
+                var districtCollection = (from d in dataEntryDbContext.districts
+                                          where d.isActive == true
+                                          select d)
+                                          .Include(l => l.labor);
+                return Ok(districtCollection);
+            }
+            else
+            {
+
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                  result);
+            }
         }
+
+            
 
         // PUT api/<DistrictController>/5
         [HttpPut("{id}")]
         public IActionResult Put(int id, [FromBody] District district)
         {
-            if (district.name == null || 
-                district.code == null || 
-                district.laborRatePerHour == 0 || 
-                district.countryId == 0)
+
+
+            var context = new ValidationContext(district, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(district, context, result, true);
+            if (result.Count() == 0)
             {
-                return Ok("You have to provide all the details");
-            }
-            else
-            {
+
                 var districtCollection = (from d in dataEntryDbContext.districts
                                          where d.id == id && d.isActive == true
                                          select d).FirstOrDefault();
@@ -119,6 +132,11 @@ namespace DataEntryApplication.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError,
                   "Sorry Cannot Update");
                 }
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                 result);
             }
            
         }

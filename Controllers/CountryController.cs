@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -55,15 +56,28 @@ namespace DataEntryApplication.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Country country)
         {
-            dataEntryDbContext.Add(country);
-            dataEntryDbContext.SaveChanges();
-            
 
-            var countryCollection = (from c in dataEntryDbContext.countries
-                                     where c.isActive == true
-                                     select c);
+            var context = new ValidationContext(country, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(country, context, result, true);
 
-            return Ok(countryCollection);
+            if (result.Count() == 0)
+            {
+                dataEntryDbContext.Add(country);
+                dataEntryDbContext.SaveChanges();
+
+
+                var countryCollection = (from c in dataEntryDbContext.countries
+                                         where c.isActive == true
+                                         select c);
+
+                return Ok(countryCollection);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                result);
+            }
 
         }
 
@@ -71,12 +85,14 @@ namespace DataEntryApplication.Controllers
         [HttpPut("{id}")]
         public IActionResult Put(int id, [FromBody] Country country)
         {
-            if (country.name == null || country.code == null)
+            var context = new ValidationContext(country, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(country, context, result, true);
+
+           if(result.Count() == 0)
             {
-                return Ok("You have to provide all the details");
-            }
-            else
-            {
+
+           
                 var countryCollection = (from c in dataEntryDbContext.countries
                                          where c.id == id && c.isActive == true
                                          select c).Include(d => d.district).FirstOrDefault();
@@ -90,9 +106,15 @@ namespace DataEntryApplication.Controllers
                 else
                 {
                     return StatusCode(StatusCodes.Status500InternalServerError,
-                  "Sorry Cannot Update");
+                  "Sorry cannot update");
                 }
             }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                  result);
+            }
+
         }
 
         // DELETE api/<CountryController>/5

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -54,15 +55,25 @@ namespace DataEntryApplication.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Labor labor)
         {
-            dataEntryDbContext.Add(labor);
-            dataEntryDbContext.SaveChanges();
+            var context = new ValidationContext(labor, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(labor, context, result, true);
+            if (result.Count() == 0)
+            {
+                dataEntryDbContext.Add(labor);
+                dataEntryDbContext.SaveChanges();
 
-            var laborCollection = (from l in dataEntryDbContext.labors
-                                   where l.isActive == true
-                                   select l);
+                var laborCollection = (from l in dataEntryDbContext.labors
+                                       where l.isActive == true
+                                       select l);
 
-            return Ok(laborCollection);
-
+                return Ok(laborCollection);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                 result);
+            }
 
         }
 
@@ -70,10 +81,13 @@ namespace DataEntryApplication.Controllers
         [HttpPut("{id}")]
         public IActionResult Put(int id, [FromBody] Labor labor)
         {
-            if (labor.laborName != null ||
-                labor.districtId!=0 ||
-                labor.taskDetail != null ||
-                labor.workHours != 0)
+
+
+
+            var context = new ValidationContext(labor, null, null);
+            var result = new List<ValidationResult>();
+            var isValid = Validator.TryValidateObject(labor, context, result, true);
+            if (result.Count() == 0)
             {
                 var laborCollection = (from l in dataEntryDbContext.labors
                                        where l.isActive == true && l.id == id
@@ -100,7 +114,8 @@ namespace DataEntryApplication.Controllers
             }
             else
             {
-                return Ok("You need to provide all the details");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                  result);
             }
         }
 
