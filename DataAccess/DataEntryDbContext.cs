@@ -17,12 +17,17 @@ namespace DataEntryApplication.DataAccess
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Country>()
-                        .ToTable("tblCountry");
+                        .ToTable("tblCountry")
+                        .HasIndex(country => new { country.code, country.name })
+                        .IsUnique();
             modelBuilder.Entity<Country>()
                         .HasKey(country => country.id);
 
+
             modelBuilder.Entity<District>()
-                        .ToTable("tblDistrict");
+                        .ToTable("tblDistrict")
+                        .HasIndex(district => new { district.code, district.name })
+                        .IsUnique();
             modelBuilder.Entity<District>()
                         .HasKey(district => district.id);
 

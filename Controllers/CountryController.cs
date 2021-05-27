@@ -56,27 +56,50 @@ namespace DataEntryApplication.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Country country)
         {
+            var existingCountryCode = (from ext in dataEntryDbContext.countries
+                                   where ext.isActive == true && ext.code == country.code
+                                   select ext).FirstOrDefault();
 
-            var context = new ValidationContext(country, null, null);
-            var result = new List<ValidationResult>();
-            var isValid = Validator.TryValidateObject(country, context, result, true);
-
-            if (result.Count() == 0)
+            if (existingCountryCode == null)
             {
-                dataEntryDbContext.Add(country);
-                dataEntryDbContext.SaveChanges();
+                var existingCountryName = (from ext in dataEntryDbContext.countries
+                                           where ext.isActive == true && ext.name == country.name
+                                           select ext).FirstOrDefault();
+                if (existingCountryName == null)
+                {
+
+                    var context = new ValidationContext(country, null, null);
+                    var result = new List<ValidationResult>();
+                    var isValid = Validator.TryValidateObject(country, context, result, true);
+
+                    if (result.Count() == 0)
+                    {
+                        dataEntryDbContext.Add(country);
+                        dataEntryDbContext.SaveChanges();
 
 
-                var countryCollection = (from c in dataEntryDbContext.countries
-                                         where c.isActive == true
-                                         select c);
+                        var countryCollection = (from c in dataEntryDbContext.countries
+                                                 where c.isActive == true
+                                                 select c);
 
-                return Ok(countryCollection);
+                        return Ok(countryCollection);
+                    }
+                    else
+                    {
+                        return StatusCode(StatusCodes.Status500InternalServerError,
+                        result);
+                    }
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                       "Country name already exists");
+                }
             }
             else
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                result);
+                   "Country code already exists");
             }
 
         }
@@ -85,35 +108,36 @@ namespace DataEntryApplication.Controllers
         [HttpPut("{id}")]
         public IActionResult Put(int id, [FromBody] Country country)
         {
-            var context = new ValidationContext(country, null, null);
-            var result = new List<ValidationResult>();
-            var isValid = Validator.TryValidateObject(country, context, result, true);
 
-           if(result.Count() == 0)
-            {
+                    var context = new ValidationContext(country, null, null);
+                    var result = new List<ValidationResult>();
+                    var isValid = Validator.TryValidateObject(country, context, result, true);
 
-           
-                var countryCollection = (from c in dataEntryDbContext.countries
-                                         where c.id == id && c.isActive == true
-                                         select c).Include(d => d.district).FirstOrDefault();
-                if (countryCollection != null)
-                {
-                    countryCollection.name = country.name;
-                    countryCollection.code = country.code;
-                    dataEntryDbContext.SaveChanges();
-                    return Ok(countryCollection);
-                }
-                else
-                {
-                    return StatusCode(StatusCodes.Status500InternalServerError,
-                  "Sorry cannot update");
-                }
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                  result);
-            }
+                    if (result.Count() == 0)
+                    {
+
+
+                        var countryCollection = (from c in dataEntryDbContext.countries
+                                                 where c.id == id && c.isActive == true
+                                                 select c).Include(d => d.district).FirstOrDefault();
+                        if (countryCollection != null)
+                        {
+                            countryCollection.name = country.name;
+                            countryCollection.code = country.code;
+                            dataEntryDbContext.SaveChanges();
+                            return Ok(countryCollection);
+                        }
+                        else
+                        {
+                            return StatusCode(StatusCodes.Status500InternalServerError,
+                          "Sorry cannot update");
+                        }
+                    }
+                    else
+                    {
+                        return StatusCode(StatusCodes.Status500InternalServerError,
+                          result);
+                    }
 
         }
 
@@ -145,6 +169,7 @@ namespace DataEntryApplication.Controllers
         [HttpGet]
         public IActionResult CountCountries()
         {
+
             var countryCollection = (from c in dataEntryDbContext.countries
                                 where c.isActive == true
                                 select c);

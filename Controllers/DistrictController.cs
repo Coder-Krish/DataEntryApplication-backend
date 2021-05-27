@@ -14,99 +14,186 @@ using System.Threading.Tasks;
 
 namespace DataEntryApplication.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [EnableCors("DataEntryApplicationPolicy")]
-    public class DistrictController : ControllerBase
+[Route("api/[controller]")]
+[ApiController]
+[EnableCors("DataEntryApplicationPolicy")]
+public class DistrictController : ControllerBase
+{
+    private DataEntryDbContext dataEntryDbContext = new DataEntryDbContext();
+
+    // GET: api/<DistrictController>
+    [HttpGet]
+    public IActionResult Get()
     {
-        private DataEntryDbContext dataEntryDbContext = new DataEntryDbContext();
+        var districtCollection = (from d in dataEntryDbContext.districts
+                                    where d.isActive == true
+                                    //d.labor.isActive == true
+                                    select d)
+                                        .Include(l => l.labor);
 
-        // GET: api/<DistrictController>
-        [HttpGet]
-        public IActionResult Get()
+        return Ok(districtCollection);
+    }
+
+    // GET api/<DistrictController>/5
+    [HttpGet("{id}")]
+    public IActionResult Get(int id)
+    {
+        var districtCollection = (from d in dataEntryDbContext.districts
+                                    where d.isActive == true && d.id == id
+                                    select d)
+                                    .Include(l => l.labor)
+                                    .FirstOrDefault();
+        if (districtCollection != null)
         {
-            var districtCollection = (from d in dataEntryDbContext.districts
-                                      where d.isActive == true
-                                      //d.labor.isActive == true
-                                      select d)
-                                           .Include(l => l.labor);
-
             return Ok(districtCollection);
         }
-
-        // GET api/<DistrictController>/5
-        [HttpGet("{id}")]
-        public IActionResult Get(int id)
+        else
         {
-            var districtCollection = (from d in dataEntryDbContext.districts
-                                      where d.isActive == true && d.id == id
-                                      select d)
-                                      .Include(l => l.labor)
-                                      .FirstOrDefault();
-            if (districtCollection != null)
-            {
-                return Ok(districtCollection);
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-               "Sorry No Data Found");
-            }
+            return StatusCode(StatusCodes.Status500InternalServerError,
+            "Sorry No Data Found");
         }
+    }
 
-        [Route("~/api/getDistrictsById/{id:int}")]
-        [HttpGet]
-        public IActionResult GetDistrictsByCountryId(int id)
+    [Route("~/api/getDistrictsById/{id:int}")]
+    [HttpGet]
+    public IActionResult GetDistrictsByCountryId(int id)
+    {
+        var districtCollection = (from d in dataEntryDbContext.districts
+                                    where d.countryId == id && d.isActive == true
+                                    select d).Include(l => l.labor);
+
+        if (districtCollection != null)
         {
-            var districtCollection = (from d in dataEntryDbContext.districts
-                                      where d.countryId == id && d.isActive == true
-                                      select d).Include(l => l.labor);
-
-            if (districtCollection != null)
-            {
-                return Ok(districtCollection);
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Sorry no data found");
-            }
+            return Ok(districtCollection);
+        }
+        else
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                "Sorry no data found");
+        }
 
            
-        }
+    }
 
-        // POST api/<DistrictController>
-        [HttpPost]
-        public IActionResult Post([FromBody] District district)
+    // POST api/<DistrictController>
+    [HttpPost]
+    public IActionResult Post([FromBody] District district)
+    {
+
+        var existingDistrictCode = (from ext in dataEntryDbContext.districts
+                                    where ext.isActive == true && ext.code == district.code
+                                    select ext).FirstOrDefault();
+
+        if(existingDistrictCode == null)
         {
-            var context = new ValidationContext(district, null, null);
-            var result = new List<ValidationResult>();
-            var isValid = Validator.TryValidateObject(district, context, result, true);
-            if(result.Count() == 0)
-            {
-                dataEntryDbContext.Add(district);
-                dataEntryDbContext.SaveChanges();
 
-                var districtCollection = (from d in dataEntryDbContext.districts
-                                          where d.isActive == true
-                                          select d)
-                                          .Include(l => l.labor);
-                return Ok(districtCollection);
+            var existingDistrictName = (from ext in dataEntryDbContext.districts
+                                        where ext.isActive == true && ext.name == district.name
+                                        select ext).FirstOrDefault();
+
+            if(existingDistrictName == null)
+            {
+                var context = new ValidationContext(district, null, null);
+                var result = new List<ValidationResult>();
+                var isValid = Validator.TryValidateObject(district, context, result, true);
+                if (result.Count() == 0)
+                {
+                    dataEntryDbContext.Add(district);
+                    dataEntryDbContext.SaveChanges();
+
+                    var districtCollection = (from d in dataEntryDbContext.districts
+                                                where d.isActive == true
+                                                select d)
+                                                .Include(l => l.labor);
+                    return Ok(districtCollection);
+                }
+                else
+                {
+
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        result);
+                }
             }
             else
             {
-
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                  result);
+                    "District Name Already Exists");
             }
+
+               
         }
+        else
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                    "District Code Already Exists");
+        }
+
+
+          
+    }
 
             
 
-        // PUT api/<DistrictController>/5
-        [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] District district)
-        {
+    // PUT api/<DistrictController>/5
+    [HttpPut("{id}")]
+    public IActionResult Put(int id, [FromBody] District district)
+    {
+
+            /*  var existingDistrictCode = (from ext in dataEntryDbContext.districts
+                                          where ext.isActive == true && !(ext.id == district.id) 
+                                          && ext.code == district.code
+                                          select ext).FirstOrDefault();
+              if(existingDistrictCode == null)
+              {
+                  var existingDistrictName = (from ext in dataEntryDbContext.districts
+                                              where ext.isActive == true && !(ext.id == district.id)
+                                              && ext.name == district.name
+                                              select ext).FirstOrDefault();
+
+                  if(existingDistrictName == null)
+                  {
+                      var context = new ValidationContext(district, null, null);
+                      var result = new List<ValidationResult>();
+                      var isValid = Validator.TryValidateObject(district, context, result, true);
+                      if (result.Count() == 0)
+                      {
+
+                          var districtCollection = (from d in dataEntryDbContext.districts
+                                                    where d.id == id && d.isActive == true
+                                                    select d).FirstOrDefault();
+                          if (districtCollection != null)
+                          {
+                              districtCollection.name = district.name;
+                              districtCollection.code = district.code;
+                              districtCollection.countryId = district.countryId;
+                              districtCollection.laborRatePerHour = district.laborRatePerHour;
+                              dataEntryDbContext.SaveChanges();
+                              return Ok(districtCollection);
+                          }
+                          else
+                          {
+                              return StatusCode(StatusCodes.Status500InternalServerError,
+                              "Sorry Cannot Update");
+                          }
+                      }
+                      else
+                      {
+                          return StatusCode(StatusCodes.Status500InternalServerError,
+                              result);
+                      }
+                  }
+                  else
+                  {
+                      return StatusCode(StatusCodes.Status500InternalServerError,
+                             "District Name Already Exists");
+                  }
+              }
+              else
+              {
+                  return StatusCode(StatusCodes.Status500InternalServerError,
+                             "District Code Already Exists");
+              }
+  */
 
 
             var context = new ValidationContext(district, null, null);
@@ -116,8 +203,8 @@ namespace DataEntryApplication.Controllers
             {
 
                 var districtCollection = (from d in dataEntryDbContext.districts
-                                         where d.id == id && d.isActive == true
-                                         select d).FirstOrDefault();
+                                          where d.id == id && d.isActive == true
+                                          select d).FirstOrDefault();
                 if (districtCollection != null)
                 {
                     districtCollection.name = district.name;
@@ -138,43 +225,47 @@ namespace DataEntryApplication.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                  result);
             }
-           
+
+
+
+
         }
 
-        // DELETE api/<DistrictController>/5
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+    // DELETE api/<DistrictController>/5
+    [HttpDelete("{id}")]
+    public IActionResult Delete(int id)
+    {
+
+        var districtCollection = (from d in dataEntryDbContext.districts
+                                    where d.isActive == true && d.id == id
+                                    select d).FirstOrDefault();
+        if (districtCollection != null)
         {
-            var districtCollection = (from d in dataEntryDbContext.districts
-                                      where d.isActive == true && d.id == id
-                                      select d).FirstOrDefault();
-            if (districtCollection != null)
-            {
-                districtCollection.isActive = false;
-                dataEntryDbContext.SaveChanges();
+            districtCollection.isActive = false;
+            dataEntryDbContext.SaveChanges();
 
-                var data = (from d in dataEntryDbContext.districts
-                            where d.isActive == true
-                            select d);
-                return Ok(data);
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-               "Sorry Cannot Delete");
-            }
-
+            var data = (from d in dataEntryDbContext.districts
+                        where d.isActive == true
+                        select d);
+            return Ok(data);
         }
-        [Route("~/api/countDistricts")]
-        [HttpGet]
-        public IActionResult CountDistricts()
+        else
         {
-            var districtCollection = (from c in dataEntryDbContext.districts
-                                     where c.isActive == true
-                                     select c);
-
-            var countOfDistrict = districtCollection.Count();
-            return Ok(countOfDistrict);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+            "Sorry Cannot Delete");
         }
+
     }
+    [Route("~/api/countDistricts")]
+    [HttpGet]
+    public IActionResult CountDistricts()
+    {
+        var districtCollection = (from c in dataEntryDbContext.districts
+                                    where c.isActive == true
+                                    select c);
+
+        var countOfDistrict = districtCollection.Count();
+        return Ok(countOfDistrict);
+    }
+}
 }
